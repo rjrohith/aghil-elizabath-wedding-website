@@ -12,7 +12,7 @@ function tick(){const d=Math.max(0,target-Date.now()),s=Math.floor(d/1000);docum
 const lightbox=document.getElementById('lightbox'),lightboxImage=document.getElementById('lightboxImage');
 document.querySelectorAll('.gallery-item').forEach(item=>item.addEventListener('click',()=>{lightboxImage.src=item.dataset.src;lightbox.showModal()}));
 document.getElementById('closeLightbox').addEventListener('click',()=>lightbox.close());lightbox.addEventListener('click',e=>{if(e.target===lightbox)lightbox.close()});
-document.getElementById('rsvpForm').addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.currentTarget);const subject=encodeURIComponent('Wedding RSVP — '+f.get('name'));const body=encodeURIComponent(`Name: ${f.get('name')}\nAttendance: ${f.get('attendance')}\nGuests: ${f.get('guests')}\nMessage: ${f.get('message')||''}`);window.location.href=`mailto:?subject=${subject}&body=${body}`});
+document.getElementById('rsvpForm').addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.currentTarget);const subject=encodeURIComponent('Wedding RSVP — '+f.get('name'));const body=encodeURIComponent(`Name: ${f.get('name')}\nAttendance: ${f.get('attendance')}\nGuests: ${f.get('guests')}\nMessage: ${f.get('message')||''}`);window.location.href=`mailto:aghiljoy6@gmail.com?subject=${subject}&body=${body}`});
 
 // Wedding music and cinematic hero entrance.
 const weddingMusic = document.getElementById('weddingMusic');
