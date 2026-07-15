@@ -15,52 +15,164 @@ document.getElementById('closeLightbox').addEventListener('click',()=>lightbox.c
 document.getElementById('rsvpForm').addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.currentTarget);const subject=encodeURIComponent('Wedding RSVP — '+f.get('name'));const body=encodeURIComponent(`Name: ${f.get('name')}\nAttendance: ${f.get('attendance')}\nGuests: ${f.get('guests')}\nMessage: ${f.get('message')||''}`);window.location.href=`mailto:?subject=${subject}&body=${body}`});
 
 // Wedding music and cinematic hero entrance.
-const weddingMusic=document.getElementById('weddingMusic');
-const musicToggle=document.getElementById('musicToggle');
-const beginStory=document.getElementById('beginStory');
-let musicStarted=false;
+const weddingMusic = document.getElementById('weddingMusic');
+const beginStory = document.getElementById('beginStory');
+const featuredVideo = document.getElementById('featuredVideo');
+const heroHeader = document.getElementById('siteHeader');
 
-function updateMusicButton(){
-  if(!musicToggle||!weddingMusic)return;
-  const playing=!weddingMusic.paused;
-  musicToggle.classList.toggle('playing',playing);
-  musicToggle.setAttribute('aria-pressed',String(playing));
-  musicToggle.setAttribute('aria-label',playing?'Pause wedding music':'Play wedding music');
-  const label=musicToggle.querySelector('.music-label');
-  if(label)label.textContent=playing?'Pause':'Music';
+let musicStarted = false;
+let musicShouldResumeAfterVideo = false;
+let fadeTimer = null;
+
+const normalMusicVolume = 0.34;
+
+function fadeAudio(audio, targetVolume, duration = 1200, pauseAtEnd = false) {
+  if (!audio) return;
+
+  if (fadeTimer) {
+    clearInterval(fadeTimer);
+    fadeTimer = null;
+  }
+
+  const startVolume = audio.volume;
+  const difference = targetVolume - startVolume;
+  const intervalTime = 50;
+  const steps = Math.max(1, Math.round(duration / intervalTime));
+  let currentStep = 0;
+
+  fadeTimer = setInterval(() => {
+    currentStep += 1;
+
+    const nextVolume =
+      startVolume + difference * (currentStep / steps);
+
+    audio.volume = Math.min(1, Math.max(0, nextVolume));
+
+    if (currentStep >= steps) {
+      clearInterval(fadeTimer);
+      fadeTimer = null;
+      audio.volume = targetVolume;
+
+      if (pauseAtEnd && targetVolume === 0) {
+        audio.pause();
+      }
+    }
+  }, intervalTime);
 }
-async function playWeddingMusic(){
-  if(!weddingMusic)return;
-  try{weddingMusic.volume=.34;await weddingMusic.play();musicStarted=true;updateMusicButton()}catch(_){updateMusicButton()}
+
+async function playWeddingMusic() {
+  if (!weddingMusic || musicStarted) return;
+
+  try {
+    weddingMusic.volume = 0;
+    weddingMusic.loop = true;
+
+    await weddingMusic.play();
+
+    musicStarted = true;
+    fadeAudio(weddingMusic, normalMusicVolume, 2500);
+  } catch (error) {
+    console.info(
+      'The browser is waiting for user interaction before playing music.',
+      error
+    );
+  }
 }
-if(musicToggle){
-  musicToggle.addEventListener('click',async()=>{
-    if(weddingMusic.paused)await playWeddingMusic();else{weddingMusic.pause();updateMusicButton()}
+
+function pauseMusicForVideo() {
+  if (!weddingMusic || !musicStarted || weddingMusic.paused) {
+    musicShouldResumeAfterVideo = false;
+    return;
+  }
+
+  musicShouldResumeAfterVideo = true;
+  fadeAudio(weddingMusic, 0, 900, true);
+}
+
+async function resumeMusicAfterVideo() {
+  if (
+    !weddingMusic ||
+    !musicStarted ||
+    !musicShouldResumeAfterVideo
+  ) {
+    return;
+  }
+
+  musicShouldResumeAfterVideo = false;
+
+  try {
+    weddingMusic.volume = 0;
+    await weddingMusic.play();
+    fadeAudio(weddingMusic, normalMusicVolume, 1800);
+  } catch (error) {
+    console.info('Background music could not resume.', error);
+  }
+}
+
+if (beginStory) {
+  beginStory.addEventListener('click', async () => {
+    await playWeddingMusic();
+
+    document
+      .getElementById('story')
+      ?.scrollIntoView({ behavior: 'smooth' });
   });
 }
-if(beginStory){
-  beginStory.addEventListener('click',async()=>{
-    if(!musicStarted)await playWeddingMusic();
-    document.getElementById('story')?.scrollIntoView({behavior:'smooth'});
+
+// Fallback: the first click, tap or key press can start the music.
+document.addEventListener('pointerdown', playWeddingMusic, {
+  once: true
+});
+
+document.addEventListener('keydown', playWeddingMusic, {
+  once: true
+});
+
+function updateHeroHeader() {
+  if (!heroHeader) return;
+
+  heroHeader.classList.toggle(
+    'is-visible',
+    window.scrollY > window.innerHeight * 0.56
+  );
+}
+
+window.addEventListener('scroll', updateHeroHeader, {
+  passive: true
+});
+
+window.addEventListener('load', updateHeroHeader);
+
+// Featured video behaviour.
+if (featuredVideo) {
+  featuredVideo.addEventListener('play', () => {
+    pauseMusicForVideo();
   });
-}
-const heroHeader=document.getElementById('siteHeader');
-function updateHeroHeader(){
-  if(!heroHeader)return;
-  heroHeader.classList.toggle('is-visible',window.scrollY>window.innerHeight*.56);
-}
-window.addEventListener('scroll',updateHeroHeader,{passive:true});
-window.addEventListener('load',updateHeroHeader);
 
+  featuredVideo.addEventListener('pause', () => {
+    if (!featuredVideo.ended) {
+      resumeMusicAfterVideo();
+    }
+  });
 
-// Play the featured film silently when it enters view; pause it when it leaves.
-const featuredVideo=document.getElementById('featuredVideo');
-if(featuredVideo){
-  const videoObserver=new IntersectionObserver(entries=>{
-    entries.forEach(entry=>{
-      if(entry.isIntersecting){featuredVideo.muted=true;featuredVideo.play().catch(()=>{});}
-      else if(!featuredVideo.paused){featuredVideo.pause();}
-    });
-  },{threshold:.55});
+  featuredVideo.addEventListener('ended', () => {
+    resumeMusicAfterVideo();
+  });
+
+  // Play muted when the video enters view and pause when it leaves.
+  const videoObserver = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          featuredVideo.muted = true;
+          featuredVideo.play().catch(() => {});
+        } else if (!featuredVideo.paused) {
+          featuredVideo.pause();
+        }
+      });
+    },
+    { threshold: 0.55 }
+  );
+
   videoObserver.observe(featuredVideo);
 }
