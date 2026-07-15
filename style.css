@@ -178,3 +178,11 @@
 .film-frame video{display:block;width:100%;max-height:760px;aspect-ratio:9/16;object-fit:contain;background:#07110e;border:1px solid rgba(216,183,127,.25);box-shadow:0 28px 70px rgba(0,0,0,.25)}
 .video-note{margin:12px 0 0;font-size:10px;letter-spacing:.12em;text-transform:uppercase;opacity:.7;text-align:center}
 @media (prefers-reduced-motion:reduce){.cinematic-intro .cinematic-line,.cinematic-intro .loader-mark,.cinematic-intro p,.cinematic-intro:before{animation:none;opacity:1;transform:none}}
+.closing-date{
+    margin-top:12px;
+    font-size:1rem;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    opacity:.9;
+    color:#d4af37;
+}
